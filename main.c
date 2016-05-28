@@ -1,20 +1,6 @@
 /*
- * This file is part of the libopencm3 project.
- *
- * Copyright (C) 2009 Uwe Hermann <uwe@hermann-uwe.de>
- *
- * This library is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this library.  If not, see <http://www.gnu.org/licenses/>.
+ * Based on libopencm32 USB HID example
+ * Roman G. Serov (c) 2016
  */
 
 #include "main.h"
@@ -42,28 +28,28 @@ const struct usb_device_descriptor dev = {
 };
 
 static const uint8_t hid_report_descriptor[] = {
-    0x06, 0x00, 0xff,
+  0x06, 0x00, 0xff,
+  HID_USAGE   (0x01),
+  HID_COLLECTION    (HID_COLLECTION_APPLICATION),
+    HID_REPORT_ID(1),
+    HID_LOGICAL_MINIMUM     (0),
+    HID_LOGICAL_MAXIMUM     (255),
+    HID_REPORT_SIZE   (8),
+    HID_REPORT_COUNT  (9),
     HID_USAGE   (0x01),
-    HID_COLLECTION    (HID_COLLECTION_APPLICATION),
-      HID_REPORT_ID(1),
-      HID_LOGICAL_MINIMUM     (0),
-      HID_LOGICAL_MAXIMUM     (255),
-      HID_REPORT_SIZE   (8),
-      HID_REPORT_COUNT  (9),
-      HID_USAGE   (0x01),
-      HID_INPUT (0x02),
-    HID_END_COLLECTION,
-    0x06, 0x00, 0xff,
+    HID_INPUT (0x02),
+  HID_END_COLLECTION,
+  0x06, 0x00, 0xff,
+  HID_USAGE   (0x01),
+  HID_COLLECTION    (HID_COLLECTION_APPLICATION),
+    HID_REPORT_ID(2),
+    HID_LOGICAL_MINIMUM     (0),
+    HID_LOGICAL_MAXIMUM     (255),
+    HID_REPORT_SIZE   (8),
+    HID_REPORT_COUNT  (MAX_PACKET_SIZE),
     HID_USAGE   (0x01),
-    HID_COLLECTION    (HID_COLLECTION_APPLICATION),
-      HID_REPORT_ID(2),
-      HID_LOGICAL_MINIMUM     (0),
-      HID_LOGICAL_MAXIMUM     (255),
-      HID_REPORT_SIZE   (8),
-      HID_REPORT_COUNT  (62),
-      HID_USAGE   (0x01),
-      HID_INPUT (0x02),
-    HID_END_COLLECTION,
+    HID_INPUT (0x02),
+  HID_END_COLLECTION,
 };
 
 static const struct {
@@ -87,22 +73,22 @@ static const struct {
 };
 
 const struct usb_endpoint_descriptor hid_endpoints[] = {
-    {
-        .bLength = USB_DT_ENDPOINT_SIZE,
-        .bDescriptorType = USB_DT_ENDPOINT,
-        .bEndpointAddress = 0x81,
-        .bmAttributes = USB_ENDPOINT_ATTR_INTERRUPT,
-        .wMaxPacketSize = 64,
-        .bInterval = 0x08,
-    },
-    {
-        .bLength = USB_DT_ENDPOINT_SIZE,
-        .bDescriptorType = USB_DT_ENDPOINT,
-        .bEndpointAddress = 0x01,
-        .bmAttributes = USB_ENDPOINT_ATTR_INTERRUPT,
-        .wMaxPacketSize = 64,
-        .bInterval = 0x08,
-    }
+  {
+    .bLength = USB_DT_ENDPOINT_SIZE,
+    .bDescriptorType = USB_DT_ENDPOINT,
+    .bEndpointAddress = 0x81,
+    .bmAttributes = USB_ENDPOINT_ATTR_INTERRUPT,
+    .wMaxPacketSize = 64,
+    .bInterval = 0x08,
+  },
+  {
+    .bLength = USB_DT_ENDPOINT_SIZE,
+    .bDescriptorType = USB_DT_ENDPOINT,
+    .bEndpointAddress = 0x01,
+    .bmAttributes = USB_ENDPOINT_ATTR_INTERRUPT,
+    .wMaxPacketSize = 64,
+    .bInterval = 0x08,
+  }
 };
 
 const struct usb_interface_descriptor hid_iface = {
@@ -112,8 +98,8 @@ const struct usb_interface_descriptor hid_iface = {
   .bAlternateSetting = 0,
   .bNumEndpoints = 2,
   .bInterfaceClass = USB_CLASS_HID,
-  .bInterfaceSubClass = 0, /* boot */
-  .bInterfaceProtocol = 0, /* mouse */
+  .bInterfaceSubClass = 0,
+  .bInterfaceProtocol = 0,
   .iInterface = 0,
 
   .endpoint = hid_endpoints,
@@ -189,7 +175,6 @@ static void clock_setup(void) {
 static void gpio_setup(void) {
   gpio_set_mode(USB_CONNECT_GPIO, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL, USB_CONNECT_PIN);
   gpio_set(USB_CONNECT_GPIO, USB_CONNECT_PIN);
-
 }
 
 usbd_device *usbd_dev;
@@ -203,7 +188,7 @@ static void usbInit(void) {
   gpio_clear(USB_CONNECT_GPIO, USB_CONNECT_PIN);
   int i;
   for (i = 0; i < 100; i++) \
-          __asm__("nop");
+    __asm__("nop");
   usbd_dev = usbd_init(&st_usbfs_v1_usb_driver, &dev, &config, usb_strings, 2, usbd_control_buffer, sizeof(usbd_control_buffer));
   usbd_register_set_config_callback(usbd_dev, hid_set_config);
 }
@@ -223,22 +208,21 @@ static void hwInit(void) {
 uint32_t crcTable[256];
 
 void make_crc_table(uint32_t crcTbl[]) {
-    uint32_t POLYNOMIAL = 0xEDB88320;
-    uint32_t remainder;
-    unsigned char b = 0;
-    do{
-        // Start with the data byte
-        remainder = b;
-        uint32_t bit;
-        for (bit = 8; bit > 0; --bit)
-        {
-            if (remainder & 1)
-                remainder = (remainder >> 1) ^ POLYNOMIAL;
-            else
-                remainder = (remainder >> 1);
-        }
-        crcTbl[(size_t)b] = remainder;
-    } while(0 != ++b);
+  uint32_t POLYNOMIAL = 0xEDB88320;
+  uint32_t remainder;
+  unsigned char b = 0;
+  do {
+    // Start with the data byte
+    remainder = b;
+    uint32_t bit;
+    for (bit = 8; bit > 0; --bit) {
+      if (remainder & 1)
+        remainder = (remainder >> 1) ^ POLYNOMIAL;
+      else
+        remainder = (remainder >> 1);
+    }
+    crcTbl[(size_t)b] = remainder;
+  } while(0 != ++b);
 }
 
 uint32_t gen_crc(unsigned char *p, size_t n, uint32_t crcTbl[]) {
@@ -250,10 +234,6 @@ uint32_t gen_crc(unsigned char *p, size_t n, uint32_t crcTbl[]) {
 }
 
 void softReset(void) {
-  //SCB_AIRCR = SCB_AIRCR_VECTKEY(0x5FA) | SCB_AIRCR_SYSRESETREQ_MASK;
-  //for(;;) {
-    /* wait until reset */
-  //}
 
 }
 
@@ -261,6 +241,7 @@ int main(void) {
   hwInit();
 
   if (gpio_get(GPIOB, GPIO14)) {
+    //run forest run
     SCB_VTOR = APP_ADDRESS & 0xFFFF;
     asm volatile("msr msp, %0"::"g" (*(volatile uint32_t *)APP_ADDRESS));
     (*(void (**)())(APP_ADDRESS + 4))();
