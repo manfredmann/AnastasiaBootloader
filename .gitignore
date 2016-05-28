@@ -1,0 +1,6 @@
+build/
+*.txt
+*.mk
+*.o
+*.d
+*.map
